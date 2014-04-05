@@ -10,12 +10,24 @@ from descartes import PolygonPatch
 from matplotlib.collections import PatchCollection
 import brewer2mpl
 
-colors = ['#0e207f', '#6d21a3', '#e3dc7f', '#a4dba3', '#e8568e', '#82b8d0', '#00a8b8', '#322e2b', '#605076', '#eeb402', '#0f9709', '#970909', '#40ffea']
-
+colors = [] #['#0e207f', '#6d21a3', '#e3dc7f', '#a4dba3', '#e8568e', '#82b8d0', '#00a8b8', '#322e2b', '#605076', '#eeb402', '#0f9709', '#970909', '#40ffea']
+lines = {}
 def createNetwork():
 	G = nx.MultiGraph()
 
 	pos = {}
+	with open("lines.csv", 'r') as f:
+		first = True
+		for line in f.readlines():
+			if first:
+				first = False
+				continue
+			else:
+				data = line.split(',')
+				lines[data[0]] = data[1]
+				colors.append('#'+data[2].replace('\"',''))
+
+	m_s = []
 	with open("stations.csv", 'r') as f:
 		first = True
 		for line in f.readlines():
@@ -29,7 +41,10 @@ def createNetwork():
 				l = float(data[1])
 				ll = float(data[2])
 				name = str(data[3]).replace('\"', '')
-				G.add_node(id, lat=l, long=ll, name=name)
+				size = int(data[6])
+				if size not in m_s:
+					m_s.append(size)
+				G.add_node(id, lat=l, long=ll, name=name, size=size)
 				pos[id] = [l, ll]
 	with open("connections.csv", 'r') as f:
 		first = True
@@ -43,6 +58,8 @@ def createNetwork():
 				s2 = int(data[1])
 				line = int(data[2])
 				G.add_edge(s1,s2,line=line)
+	print m_s
+	#return
 	plotPositions(G, pos)
 
 
@@ -79,7 +96,7 @@ def plotPositions(G, pos):
 	# # calculate points that fall within the London boundary
 	# ldn_points = filter(wards_polygon.contains, plaque_points)
 
-	df_map['patches'] = df_map['poly'].map(lambda x: PolygonPatch(x, fc='#555555', ec='#787878', lw=.25, alpha=.9, zorder=4))
+	df_map['patches'] = df_map['poly'].map(lambda x: PolygonPatch(x, fc='#ffffff', ec='#000000', lw=.25, alpha=.9, zorder=4))
 
 
 
@@ -96,8 +113,7 @@ def plotPositions(G, pos):
 	
 	plt.title("London tube")
 	
-
-
+	plotted_lines = []
 
 	for edge in G.edges(data=True):
 		s1 = G.node[edge[0]]
@@ -106,12 +122,20 @@ def plotPositions(G, pos):
 		x1,y1 = m(s1['long'],s1['lat'])
 		x2,y2 = m(s2['long'],s2['lat'])
 		plt.hold('on')
-		m.plot(x1, y1, '.', markersize=5, color=color, alpha=0.5)
+
+		label = ''
+		if edge[2]['line'] not in plotted_lines:
+			label = lines[str(edge[2]['line'])]
+			plotted_lines.append(edge[2]['line'])
+
+		m.plot(x1, y1, '.', markersize=2+s1['size']*2, color=color, alpha=0.8, label='')
 		plt.hold('on')
-		m.plot([x1, x2], [y1, y2], '-', color = color, linewidth=3, alpha=0.5)
+		m.plot([x1, x2], [y1, y2], '-', color = color, linewidth=3, alpha=0.8, label=label)
 		plt.hold('on')
-		m.plot(x2, y2, '.', markersize=5, color=color, alpha=0.5)
+		m.plot(x2, y2, '.', markersize=2+s2['size']*2, color=color, alpha=0.8, label='')
 		plt.hold('on')
+
+	plt.legend(loc=3,prop={'size':10})
 		
 
 	plt.tight_layout()
