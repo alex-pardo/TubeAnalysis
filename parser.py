@@ -66,7 +66,7 @@ def plotPositions(G, pos):
 	            urcrnrlon=max(lons) + 2, urcrnrlat=max(lats) + 2,
 	            resolution='i')
 
-	m.readshapefile('../london/london_wards','london', color='none', zorder=2)
+	m.readshapefile('./london/london_wards','london', color='none', zorder=2)
 	df_map = pd.DataFrame({'poly': [Polygon(xy) for xy in m.london],'ward_name': [ward['NAME'] for ward in m.london_info]})
 	df_map['area_m'] = df_map['poly'].map(lambda x: x.area)
 	df_map['area_km'] = df_map['area_m'] / 100000
