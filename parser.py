@@ -1,14 +1,15 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
-import Image
-import pandas as pd
-from mpl_toolkits.basemap import Basemap
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-from shapely.geometry import Point, Polygon, MultiPoint, MultiPolygon
-from descartes import PolygonPatch
-from matplotlib.collections import PatchCollection
-import brewer2mpl
+from itertools import imap
+# import Image
+# import pandas as pd
+# from mpl_toolkits.basemap import Basemap
+# from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+# from shapely.geometry import Point, Polygon, MultiPoint, MultiPolygon
+# from descartes import PolygonPatch
+# from matplotlib.collections import PatchCollection
+# import brewer2mpl
 
 colors = [] #['#0e207f', '#6d21a3', '#e3dc7f', '#a4dba3', '#e8568e', '#82b8d0', '#00a8b8', '#322e2b', '#605076', '#eeb402', '#0f9709', '#970909', '#40ffea']
 lines = {}
@@ -57,11 +58,35 @@ def createNetwork():
 				s1 = int(data[0])
 				s2 = int(data[1])
 				line = int(data[2])
-				G.add_edge(s1,s2,line=line)
+				w = np.round(haversine_km(G.node[s1]['lat'], G.node[s1]['long'], G.node[s2]['lat'], G.node[s2]['long'])*1000)
+				# print 'Distance between ', G.node[s1]['name'], 'and', G.node[s2]['name'], ':',w
+				G.add_edge(s1,s2,line=line, weight= int(w))
 	print m_s
 	#return
-	plotPositions(G, pos)
+	nx.write_graphml(G, 'tube_map.graphml')
+	print 'Generating paths'
+	saveMinPaths(G)
+	#plotPositions(G, pos)
 
+
+def haversine_km(lat1, long1, lat2, long2):
+	d2r = np.pi/180.0
+	dlong = (long2 - long1) * d2r
+	dlat = (lat2 - lat1) * d2r
+	a = np.sin(dlat/2.0)**2 + np.cos(lat1*d2r) * np.cos(lat2*d2r) * np.sin(dlong/2.0)**2
+	c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
+	d = 6367 * c
+	return d
+
+
+def saveMinPaths(G):
+	p=nx.shortest_path(G, weight='weight')
+	with open('paths.csv','w') as f:
+		for source in p:
+			for destinatiton in p[source]:
+				if source == destinatiton:
+					continue
+				f.write(str(source)+','+str(destinatiton)+','+ ",".join(imap(str, p[source][destinatiton]))+'\n')
 
 
 def plotPositions(G, pos):
