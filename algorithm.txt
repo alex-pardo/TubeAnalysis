@@ -1,0 +1,45 @@
+
+Read the graph.
+
+Read the paths and put them in a hash map (source, dest) = path.
+
+Read all the journeys.
+
+	
+for each t from 0 til t_max,
+	update the current travellers:
+		if travelling, move along the path (if time reached) and remove those at destination
+		from those who are not travelling, 
+			add all the possible ones to the network until the max capacity is reached
+	
+	add all the new travellers to the network if possible,
+		if not, add them to the queue of the specific station
+
+end
+	
+CONSIDERATIONS:
+	each traveller is moving along an edge for a certain time:
+		speed = 50 km/h --> 50km / h * 1 h / 60 min = 0.83 km/min
+		at max, for every timestep, the travellers can move 0.83 km.
+
+	the capacity of each edge is computed using the following formula:
+		(#trains * capacity ) / (number of edges in the line*2)			 // * 2 since is bidireccional
+
+
+METRICS:
+	compute the avg waiting time
+
+	compare the people in the network with the data given by oyster
+
+
+REAL TIME VALUES:
+	avg waiting time
+
+	avg waiting time per line
+
+	number of travellers in the system
+
+	percentage of moving travellers
+
+
+	
