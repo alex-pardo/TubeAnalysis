@@ -2,21 +2,14 @@ package utils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Hashtable;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Features;
 import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLReader;
@@ -31,7 +24,7 @@ public class FileReader {
 		Graph graph = new TinkerGraph();
 
 		GraphMLReader.inputGraph(graph, filename);
-		System.out.println("--> Graph loaded: " + graph);
+		// System.out.println("--> Graph loaded: " + graph);
 		
 		
 		if(debug){
@@ -90,7 +83,7 @@ public class FileReader {
 		ArrayList<Journey> journeys =  new ArrayList<>();
 		File f = new File(filename);
 		
-		HashMap<String, Integer> stations = parseStations(filename.replace("tube_journeys", "stations"));
+		HashMap<String, Integer> stations = parseStations("../stations.csv");//parseStations(filename.replace("tube_journeys", "stations"));
 		
 		FileInputStream fs = new FileInputStream(f);
 		BufferedReader br = new BufferedReader( new InputStreamReader( fs ) );
@@ -105,9 +98,16 @@ public class FileReader {
 			String init = values[4];
 			if(src.equals(dest)) continue;
 			path = paths.get(new Key(src, dest));
-			Edge[] edge_path = getEdgePath(path, g);
-			j = new Journey(src, dest, path, g, Integer.parseInt(init), edge_path);
-			journeys.add(j);
+			
+			Edge[] edge_path;
+			try {	
+				edge_path = getEdgePath(path, g);
+				j = new Journey(src, dest, path, g, Integer.parseInt(init), edge_path);
+				journeys.add(j);
+			} catch (NullPointerException e) { // caused because of the deletion of a node
+				continue;
+			}
+			
 		}
 		return journeys;
 	}

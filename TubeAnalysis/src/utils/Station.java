@@ -22,4 +22,12 @@ public class Station {
 		queue.add(j);
 	}
 
+	public ArrayList<Journey> getJourneys() {
+		return queue;
+	}
+	
+	public void removeJourney(Journey j){
+		queue.remove(j);
+	}
+
 }

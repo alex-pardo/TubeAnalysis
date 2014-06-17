@@ -2,6 +2,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 from itertools import imap
+import pdb
+import operator
 # import Image
 # import pandas as pd
 # from mpl_toolkits.basemap import Basemap
@@ -11,8 +13,11 @@ from itertools import imap
 # from matplotlib.collections import PatchCollection
 # import brewer2mpl
 
+graphname = ['./data/tube_map.graphml', './data/tube_map_btw1.graphml', './data/tube_map_btw2.graphml', './data/tube_map_neigh1.graphml', './data/tube_map_intraffic.graphml', './data/tube_map_outtraffic.graphml']
+mode = 4
 colors = [] #['#0e207f', '#6d21a3', '#e3dc7f', '#a4dba3', '#e8568e', '#82b8d0', '#00a8b8', '#322e2b', '#605076', '#eeb402', '#0f9709', '#970909', '#40ffea']
 lines = {}
+stations = {}
 def createNetwork():
 	G = nx.MultiGraph()
 
@@ -46,6 +51,7 @@ def createNetwork():
 				if size not in m_s:
 					m_s.append(size)
 				G.add_node(id, lat=l, long=ll, name=name, size=size)
+				stations[id] = name
 				pos[id] = [l, ll]
 	with open("connections.csv", 'r') as f:
 		first = True
@@ -63,10 +69,88 @@ def createNetwork():
 				G.add_edge(s1,s2,line=line, weight= int(w))
 	print m_s
 	#return
-	nx.write_graphml(G, 'tube_map.graphml')
+	betweenness = nx.betweenness_centrality(G, weight='weight')
+	betweenness = sorted(betweenness.iteritems(), key=operator.itemgetter(1), reverse=True)
+	num_neigh = {}
+	for node in G.nodes():
+		num_neigh[node] = len(G.neighbors(node))
+	num_neigh = sorted(num_neigh.iteritems(), key=operator.itemgetter(1), reverse=True)
+
+	if mode == 1:
+		closest_node = [stations[closest(G, betweenness[0][0])]]
+		deleted = [stations[betweenness[0][0]]]
+		G.remove_node(betweenness[0][0])
+	if mode == 2:
+		closest_node = [stations[closest(G, betweenness[0][0])], stations[closest(G, betweenness[1][0])]]
+		deleted = [stations[betweenness[0][0]], stations[betweenness[1][0]]]
+		G.remove_node(betweenness[0][0])
+		G.remove_node(betweenness[1][0])
+	if mode == 3:
+		closest_node = [stations[closest(G, num_neigh[0][0])]]
+		deleted = [stations[num_neigh[0][0]]]
+		G.remove_node(num_neigh[0][0])
+	if mode == 4:
+		in_traffic = {}
+		with open('tube_journeys.csv', 'r') as f:
+			for line in f.readlines():
+				data = line.split(',')
+				try:
+					in_traffic[data[2]] += 1
+				except:
+					in_traffic[data[2]] = 0
+		large = sorted(in_traffic.iteritems(), key=operator.itemgetter(1), reverse=True)[0][0]
+		large = stations.keys()[stations.values().index(large)]
+		closest_node = [stations[closest(G, large)]]
+		deleted = [stations[large]]
+		G.remove_node(large)
+	if mode == 5:
+		out_traffic = {}
+		with open('tube_journeys.csv', 'r') as f:
+			for line in f.readlines():
+				data = line.split(',')
+				try:
+					out_traffic[data[3]] += 1
+				except:
+					out_traffic[data[3]] = 0
+		large = sorted(out_traffic.iteritems(), key=operator.itemgetter(1), reverse=True)[0][0]
+		large = stations.keys()[stations.values().index(large)]
+		closest_node = [stations[closest(G, large)]]
+		deleted = [stations[large]]
+		G.remove_node(large)
+	if mode >= 1:	
+		print 'Regenerating journeys'
+		regenarate_journeys(deleted, closest_node)
+
+	nx.write_graphml(G, graphname[mode])
 	print 'Generating paths'
 	saveMinPaths(G)
 	#plotPositions(G, pos)
+
+def closest(G, node):
+	closest = float('inf')
+	closest_neigh  = None
+	for neigh in G.neighbors(node):
+		if G[int(node)][int(neigh)][0]['weight'] < closest:
+			closest_neigh = neigh
+			closest = G[int(node)][int(neigh)][0]['weight']
+	return closest_neigh
+
+def regenarate_journeys(deleted, closest_nodes):
+	'./data/tube_map_btw1.graphml'
+	delete_dic = {}
+	for i in range(len(deleted)):
+		delete_dic[deleted[i]] = closest_nodes[i]
+
+	journey_output = graphname[mode].split('_')[0] + '_journeys_' + graphname[mode].split('_')[-1].replace('.graphml', '.csv')
+	with open(journey_output, 'w') as fout:
+		with open('tube_journeys.csv') as fin:
+			for line in fin.readlines():
+				data = line.split(',')
+				if data[2] in delete_dic.keys():
+					data[2] = delete_dic[data[2]]
+				if data[3] in delete_dic.keys():
+					data[3] = delete_dic[data[3]]
+				fout.write(",".join(data))
 
 
 def haversine_km(lat1, long1, lat2, long2):
@@ -81,7 +165,7 @@ def haversine_km(lat1, long1, lat2, long2):
 
 def saveMinPaths(G):
 	p=nx.shortest_path(G, weight='weight')
-	with open('paths.csv','w') as f:
+	with open(graphname[mode].replace('.graphml', '_paths.csv'),'w') as f:
 		for source in p:
 			for destinatiton in p[source]:
 				if source == destinatiton:
