@@ -81,10 +81,11 @@ public class TubeAnalysisGUI {
 		
 		JPanel panel = new JPanel();
 		
-		JButton btnRun = new JButton("RUN");
+		JButton btnRun = new JButton("RUN 1");
 		btnRun.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				ta.setValues(TubeAnalysisGUI.edgeSlider.getValue(), TubeAnalysisGUI.speedSlider.getValue());
+				float m_turn = TubeAnalysisGUI.speedSlider.getValue()*100/6.f;
+				ta.setValues(TubeAnalysisGUI.edgeSlider.getValue(), (int)m_turn);
 				String selected = null;
 				for (Enumeration<AbstractButton> buttons = buttonGroup.getElements(); buttons.hasMoreElements();) {
 		            AbstractButton button = buttons.nextElement();
@@ -133,25 +134,33 @@ public class TubeAnalysisGUI {
 		JRadioButton rdbtnRemoveLargeOut = new JRadioButton("Remove large out traffic");
 		rdbtnRemoveLargeOut.setToolTipText("5");
 		buttonGroup.add(rdbtnRemoveLargeOut);
+		
+		JButton btnRunAll = new JButton("RUN ALL");
+		btnRunAll.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				float m_turn = TubeAnalysisGUI.speedSlider.getValue()*100/6.f;
+				ta.setValues(TubeAnalysisGUI.edgeSlider.getValue(), (int)m_turn);
+				String selected = null;
+
+				for (Enumeration<AbstractButton> buttons = buttonGroup.getElements(); buttons.hasMoreElements();) {
+		            AbstractButton button = buttons.nextElement();
+		            selected = button.getToolTipText();
+		            ta.setMode(selected);
+					ta.run();
+		        }
+				
+			}
+		});
 		GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
 		groupLayout.setHorizontalGroup(
-			groupLayout.createParallelGroup(Alignment.TRAILING)
-				.addGroup(groupLayout.createSequentialGroup()
-					.addGap(14)
-					.addComponent(panel, GroupLayout.PREFERRED_SIZE, 187, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(17, Short.MAX_VALUE))
+			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
 					.addComponent(panel_1, GroupLayout.PREFERRED_SIZE, 203, GroupLayout.PREFERRED_SIZE)
 					.addContainerGap(9, Short.MAX_VALUE))
 				.addGroup(groupLayout.createSequentialGroup()
-					.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-						.addGroup(groupLayout.createSequentialGroup()
-							.addContainerGap()
-							.addComponent(btnRun))
-						.addGroup(groupLayout.createSequentialGroup()
-							.addGap(66)
-							.addComponent(btnReset, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+					.addGap(66)
+					.addComponent(btnReset, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
 					.addGap(71))
 				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
@@ -168,15 +177,26 @@ public class TubeAnalysisGUI {
 				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
 					.addComponent(rdbtnNewRadioButton_4)
-					.addContainerGap(26, Short.MAX_VALUE))
+					.addContainerGap(38, Short.MAX_VALUE))
 				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
 					.addComponent(rdbtnNewRadioButton)
 					.addContainerGap(114, Short.MAX_VALUE))
-				.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
+				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
 					.addComponent(rdbtnRemoveLargeOut)
-					.addContainerGap(71, Short.MAX_VALUE))
+					.addContainerGap(29, Short.MAX_VALUE))
+				.addGroup(groupLayout.createSequentialGroup()
+					.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING, false)
+						.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
+							.addContainerGap()
+							.addComponent(btnRun)
+							.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+							.addComponent(btnRunAll))
+						.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
+							.addGap(14)
+							.addComponent(panel, GroupLayout.PREFERRED_SIZE, 187, GroupLayout.PREFERRED_SIZE)))
+					.addContainerGap(17, Short.MAX_VALUE))
 		);
 		groupLayout.setVerticalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
@@ -198,7 +218,9 @@ public class TubeAnalysisGUI {
 					.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
 					.addComponent(rdbtnRemoveLargeOut)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(btnRun)
+					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+						.addComponent(btnRun)
+						.addComponent(btnRunAll))
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_1, GroupLayout.PREFERRED_SIZE, 85, GroupLayout.PREFERRED_SIZE)
 					.addContainerGap())
@@ -271,7 +293,7 @@ public class TubeAnalysisGUI {
 		edgeSlider.setValue(959);
 		panel.add(edgeSlider);
 		
-		JLabel lblNewLabel_1 = new JLabel("m/turn: ");
+		JLabel lblNewLabel_1 = new JLabel("km/h:");
 		panel.add(lblNewLabel_1);
 		
 		speed_value = new JLabel("");
@@ -284,9 +306,7 @@ public class TubeAnalysisGUI {
 			}
 		});
 		
-		speedSlider.setMinimum(500);
-		speedSlider.setMaximum(1500);
-		speedSlider.setValue(833);
+		speedSlider.setMinimum(20);
 		panel.add(speedSlider);
 		frame.getContentPane().setLayout(groupLayout);
 	}

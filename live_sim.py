@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-G = nx.read_graphml('tube_map.graphml')
+G = nx.read_graphml('./data/tube_map.graphml')
 # max_vals = [float('-inf'), float('-inf')]
 # min_vals = [float('inf'), float('inf')]
 positions = {}
@@ -34,8 +34,8 @@ with open('stations.csv', 'r') as f:
 
 
 data = []
-print 'Total number of journeys:', sum(1 for line in open('tube_journeys.csv'))
-with open('tube_journeys.csv', 'r') as f:
+print 'Total number of journeys:', sum(1 for line in open('./data/tube_journeys.csv'))
+with open('./data/tube_journeys.csv', 'r') as f:
 	for line in f.readlines():
 		line = line.replace('\n','')
 		line = line.split(',')
@@ -114,7 +114,7 @@ while len(end) > 0:
 plt.figure(f2.number)
 tmp = np.linspace(init_time, current_time, len(travelers))
 plt.plot(tmp, travelers, '-b')
-plt.title(current_time)
+plt.title('Oyster dataset')
 plt.show()
 
 

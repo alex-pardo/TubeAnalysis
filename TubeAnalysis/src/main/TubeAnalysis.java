@@ -2,20 +2,30 @@ package main;
 
 import gui.TubeAnalysisGUI;
 
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.text.DefaultCaret;
 
-import org.math.plot.Plot2DPanel;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.CategoryAxis;
+import org.jfree.chart.axis.CategoryLabelPositions;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.Plot;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
 
 import utils.FileReader;
 import utils.Journey;
@@ -25,6 +35,7 @@ import utils.Station;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
+//import org.jfree.chart.ChartFactory;
 
 
 
@@ -42,10 +53,13 @@ public class TubeAnalysis {
 
 	private JFrame tubeFrame;
 	private static JTextArea text_out;
-	private Plot2DPanel plot;
+	private JPanel plot;
 
 	private int mode = 0;
 	
+	private DefaultCategoryDataset dataset = new DefaultCategoryDataset(); 
+	
+
 	private String mode_name;
 
 	public TubeAnalysis() {
@@ -53,21 +67,21 @@ public class TubeAnalysis {
 		//		M_PER_TURN = m;
 		tubeFrame = new JFrame();
 		text_out = new JTextArea();
-		plot = new Plot2DPanel();
+		plot = new JPanel();
 
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setViewportView(text_out);
-		
+
 		DefaultCaret caret = (DefaultCaret)text_out.getCaret();
 		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-		
+
 		JTabbedPane jtp = new JTabbedPane();
-		
+
 		jtp.addTab("Output", scrollPane);
 		jtp.addTab("Plot", plot);
 		tubeFrame.add(jtp);
 
-		tubeFrame.setSize(600, 600);
+		tubeFrame.setSize(800, 800);
 		tubeFrame.setVisible(true);
 	}
 
@@ -79,12 +93,6 @@ public class TubeAnalysis {
 		text_out.setText(text);
 	}
 
-	public static void main(String[] args) {
-		printGreeting();
-		TubeAnalysis ta = new TubeAnalysis();
-		ta.setValues(959, 833);
-		ta.run();
-	}
 
 	public void setValues(int edge, int m) {
 		EDGE_CAPACITY = edge;
@@ -100,16 +108,16 @@ public class TubeAnalysis {
 
 			printText(mode_name);
 			printText("--> Loading data:");
-			
+
 			Graph graph = FileReader.parseGraph(files[0], false);
-			
+
 			HashMap<Key, String []> paths = FileReader.parseShortestPaths(files[1], graph);
 			printText("      " + paths.size() + " paths loaded");
 			ArrayList<Journey> journeys = FileReader.parseJourneys(files[2], paths, graph);
 			printText("      " + journeys.size() + " journeys loaded");
-			
+
 			printText("--> Beginning execution:");
-			
+
 
 			basicTest(graph, paths, journeys, 1000);
 
@@ -151,7 +159,7 @@ public class TubeAnalysis {
 		return null;
 	}
 
-	
+
 
 	public void basicTest(Graph graph, HashMap<Key, String []> paths, ArrayList<Journey> journeys, int t_max){
 		Collections.sort(journeys, new Comparator<Journey>(){
@@ -274,18 +282,57 @@ public class TubeAnalysis {
 		printText("      MAX TIMEe = " + max_time);
 		printText("      Number of journeys tested = " + count);
 		printText("      Number of journeys in the database = " + count);
-		
+
 
 		TubeAnalysisGUI.setResults(Float.toString(total/(float)count), Float.toString(extra/(float)count), Integer.toString(count));
 
-		Histogram hist = createHistogram(x,y,5, max_time);
-		double[] datax = hist.x;
-		double[] datay = hist.y;
+		
+		
+		
+		//plot.addLinePlot(mode_name, tmpx1, tmpy);
+		//plot.addLinePlot(mode_name, tmpx2, tmpy);
+		//plot.paintImmediately(new Rectangle((int)tmpx[0], 0, 1, (int)tmpy[0]));
+		//plot.addBarPlot(, tmpx, tmpy);
+		
+		dataset.addValue(extra/(float)count, "Mean extra time", mode_name);
+		dataset.addValue(total/(float)count, "Mean time", mode_name);
+		
+		//JFreeChart chart = ChartFactory.createBarChart("", "", "", dataset);
+		
+		
+		JFreeChart chart = ChartFactory.createBarChart(
+	            "Travel Time",         // chart title
+	            "Graph",               // domain axis label
+	            "Minutes",                  // range axis label
+	            dataset,                  // data
+	            PlotOrientation.VERTICAL, // orientation
+	            true,                     // include legend
+	            true,                     // tooltips?
+	            false                     // URLs?
+	        );
 
-		plot.setAxisLabels("number of people", "extra waiting time");
-		plot.addBarPlot(mode_name, datax, datay);
-		plot.addLegend(plot.EAST);
 
+		CategoryPlot p = chart.getCategoryPlot();
+		CategoryAxis domainAxis = p.getDomainAxis();
+        domainAxis.setCategoryLabelPositions(
+            CategoryLabelPositions.createUpRotationLabelPositions(Math.PI / 6.0)
+        );
+        
+        
+		
+		ChartPanel cp = new ChartPanel(chart);
+		
+		cp.setPreferredSize(new Dimension(plot.getWidth(), plot.getHeight()));
+		plot.removeAll();
+		plot.add(cp);
+		
+		BorderLayout bl = new BorderLayout();
+		
+		plot.setLayout(bl);
+		Dimension panelSize = plot.getSize();
+		plot.add(cp,BorderLayout.CENTER);
+		cp.setSize(panelSize);
+		
 		printText("_______________________________");
 
 	}
@@ -345,6 +392,8 @@ public class TubeAnalysis {
 	public void setMode(String selected) {
 		mode = Integer.parseInt(selected);
 	}
+
+
 
 
 }
